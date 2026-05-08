@@ -1,0 +1,37 @@
+# config.yaml — incident toolkit configuration
+# Copy this to your working directory and fill in your team's values.
+# Don't commit real DLs or webhook URLs — use env vars or a secrets manager.
+
+defaults:
+  service: "< primary service name >"
+  declared_by: "< your name >"
+  timezone: "America/Chicago"
+
+team:
+  name: "Platform SRE"
+  slack_handle: "@sre-oncall"
+  oncall_primary: "< PagerDuty/OpsGenie rotation name >"
+  oncall_secondary: "< backup rotation name >"
+
+notifications:
+  slack:
+    enabled: true
+    critical_channel: "#incidents-critical"
+    general_channel: "#incidents"
+    # set SLACK_WEBHOOK_URL in your environment
+    webhook_env_var: "SLACK_WEBHOOK_URL"
+
+  email:
+    enabled: true
+    critical_dl: "sre-critical@yourcompany.com"
+    oncall_dl: "sre-oncall@yourcompany.com"
+
+incident_log:
+  # where create_incident.py writes runbooks
+  output_dir: "active_incidents"
+  # where closed incidents are archived
+  archive_dir: "closed_incidents"
+
+# override classifier rules file if needed
+classifier:
+  rules_file: "classifier/rules.yaml"
