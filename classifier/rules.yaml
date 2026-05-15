@@ -1,0 +1,105 @@
+# Severity classification rules
+# Tuned for API-driven, cloud-native platforms
+# Adjust thresholds to match your SLOs — these are starting points, not gospel
+#
+# Rule evaluation is top-down, first match wins.
+# Keep CRITICAL/HIGH rules tight. When in doubt, escalate up not down.
+
+severity_levels:
+  CRITICAL:
+    description: "Full or near-full service outage. Revenue/data impact. Wake people up."
+    response_time_minutes: 15
+    requires_bridge: true
+    notify:
+      - oncall_primary
+      - oncall_secondary
+      - engineering_director
+      - vp_engineering
+    rules:
+      - metric: error_rate
+        operator: ">="
+        threshold: 0.25        # 25%+ errors across any critical API
+      - metric: availability
+        operator: "<"
+        threshold: 0.95        # below 99.5% SLO floor
+      - metric: latency_p99_ms
+        operator: ">="
+        threshold: 10000       # 10s p99 — users are giving up
+      - keyword_match:
+          - "data loss"
+          - "data corruption"
+          - "authentication down"
+          - "payment failure"
+          - "complete outage"
+
+  HIGH:
+    description: "Significant degradation. Subset of users or features affected. Fix within the hour."
+    response_time_minutes: 30
+    requires_bridge: true
+    notify:
+      - oncall_primary
+      - oncall_secondary
+      - engineering_manager
+    rules:
+      - metric: error_rate
+        operator: ">="
+        threshold: 0.05        # 5%+ errors
+      - metric: availability
+        operator: "<"
+        threshold: 0.99
+      - metric: latency_p99_ms
+        operator: ">="
+        threshold: 5000
+      - keyword_match:
+          - "partial outage"
+          - "login issues"
+          - "elevated errors"
+          - "database slow"
+
+  MEDIUM:
+    description: "Noticeable degradation but workaround exists or blast radius is limited."
+    response_time_minutes: 120
+    requires_bridge: false
+    notify:
+      - oncall_primary
+      - team_slack_channel
+    rules:
+      - metric: error_rate
+        operator: ">="
+        threshold: 0.01        # 1%+ errors
+      - metric: latency_p95_ms
+        operator: ">="
+        threshold: 3000
+      - keyword_match:
+          - "intermittent"
+          - "slow response"
+          - "increased latency"
+          - "retry storms"
+
+  LOW:
+    description: "Minor issue, cosmetic, or affects a small number of users. Handle during business hours."
+    response_time_minutes: 480   # next business day is fine
+    requires_bridge: false
+    notify:
+      - team_slack_channel
+    rules:
+      - keyword_match:
+          - "cosmetic"
+          - "single user"
+          - "non-production"
+          - "flaky test"
+
+# Channels config — fill in your actual values
+notifications:
+  slack:
+    critical_channel: "#incidents-critical"
+    high_channel: "#incidents-high"
+    general_channel: "#incidents"
+    # webhook URLs should come from env, not hardcoded here
+    webhook_env_var: "SLACK_WEBHOOK_URL"
+
+  email:
+    critical_dl: "sre-critical@yourcompany.com"
+    high_dl: "sre-oncall@yourcompany.com"
+    general_dl: "engineering@yourcompany.com"
+    # TODO: add escalation DLs per domain when we have them
